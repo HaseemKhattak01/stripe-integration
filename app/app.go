@@ -1,20 +1,29 @@
 package app
+
 import (
 	"fmt"
 	"log"
 	"time"
+
 	"github.com/HaseemKhattak01/stripe-integration/config"
 	"github.com/HaseemKhattak01/stripe-integration/handlers"
 )
+
 func RunApp() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
+
 	stripeClient, err := handlers.NewStripeHandler(cfg.StripeKey)
 	if err != nil {
 		log.Fatalf("Failed to initialize Stripe client: %v", err)
 	}
+
+	createAndLogCustomer(stripeClient)
+}
+
+func createAndLogCustomer(stripeClient *handlers.StripeHandler) {
 	customerName := fmt.Sprintf("Test Customer %d", time.Now().UnixNano())
 	customer, err := stripeClient.CreateCustomer(customerName)
 	if err != nil {

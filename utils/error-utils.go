@@ -1,18 +1,22 @@
 package utils
+
 import (
 	"fmt"
 	"github.com/stripe/stripe-go/v76"
 )
+
 func HandleStripeError(err error) error {
 	if stripeErr, ok := err.(*stripe.Error); ok {
+		var errMsg string
 		switch stripeErr.Code {
 		case stripe.ErrorCodeCardDeclined:
-			return fmt.Errorf("card was declined: %v", stripeErr.Error())
+			errMsg = "card was declined"
 		case stripe.ErrorCodeExpiredCard:
-			return fmt.Errorf("card is expired: %v", stripeErr.Error())
+			errMsg = "card is expired"
 		default:
-			return fmt.Errorf("stripe error: %v", stripeErr.Error())
+			errMsg = "stripe error"
 		}
+		return fmt.Errorf("%s: %v", errMsg, stripeErr.Error())
 	}
 	return err
 }
