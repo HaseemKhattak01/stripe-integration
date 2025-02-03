@@ -4,9 +4,3 @@ type Customer struct {
 	Description string
 	Email       string
 }
-type Charge struct {
-	ID       string
-	Amount   int64
-	Currency string
-	Customer string
-}

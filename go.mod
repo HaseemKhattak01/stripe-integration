@@ -4,6 +4,5 @@ go 1.22.5
 
 require (
 	github.com/joho/godotenv v1.5.1
-	github.com/stripe/stripe-go v70.15.0+incompatible
 	github.com/stripe/stripe-go/v76 v76.25.0
 )

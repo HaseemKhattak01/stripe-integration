@@ -26,16 +26,3 @@ func (ss *StripeService) CreateCustomer(description string) (*models.Customer, e
 		Email:       cus.Email,
 	}, nil
 }
-
-func (ss *StripeService) CreateCharge(amount int64, currency, customerID string) (*models.Charge, error) {
-	ch, err := ss.Handler.CreateCharge(amount, currency, customerID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create charge: %w", err)
-	}
-	return &models.Charge{
-		ID:       ch.ID,
-		Amount:   ch.Amount,
-		Currency: string(ch.Currency),
-		Customer: ch.Customer.ID,
-	}, nil
-}

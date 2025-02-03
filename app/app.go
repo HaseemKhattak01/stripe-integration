@@ -20,14 +20,21 @@ func RunApp() {
 		log.Fatalf("Failed to initialize Stripe client: %v", err)
 	}
 
-	createAndLogCustomer(stripeClient)
+	if err := createAndLogCustomer(stripeClient); err != nil {
+		log.Fatalf("Error in customer creation: %v", err)
+	}
 }
 
-func createAndLogCustomer(stripeClient *handlers.StripeHandler) {
-	customerName := fmt.Sprintf("Test Customer %d", time.Now().UnixNano())
+func createAndLogCustomer(stripeClient *handlers.StripeHandler) error {
+	customerName := generateCustomerName()
 	customer, err := stripeClient.CreateCustomer(customerName)
 	if err != nil {
-		log.Fatalf("Failed to create customer: %v", err)
+		return fmt.Errorf("failed to create customer: %w", err)
 	}
-	fmt.Printf("Created customer: %v\n", customer.ID)
+	log.Printf("Created customer: %v", customer.ID)
+	return nil
+}
+
+func generateCustomerName() string {
+	return fmt.Sprintf("Test Customer %d", time.Now().UnixNano())
 }

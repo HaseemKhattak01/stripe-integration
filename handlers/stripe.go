@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	stripeclient "github.com/HaseemKhattak01/stripe-integration/stripe-client"
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/charge"
 	"github.com/stripe/stripe-go/v76/client"
@@ -12,8 +13,8 @@ type StripeHandler struct {
 }
 
 func NewStripeHandler(apiKey string) (*StripeHandler, error) {
+	stripeclient.InitClient(apiKey)
 	stripeClient := &client.API{}
-	stripeClient.Init(apiKey, nil)
 	return &StripeHandler{Client: stripeClient}, nil
 }
 
