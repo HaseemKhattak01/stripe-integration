@@ -6,6 +6,7 @@ import (
 	stripeclient "github.com/HaseemKhattak01/stripe-integration/stripe-client"
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/customer"
+	"github.com/stripe/stripe-go/v76/paymentmethod"
 )
 
 type StripeHandler struct {
@@ -17,11 +18,27 @@ func NewStripeHandler() *StripeHandler {
 }
 
 func (sh *StripeHandler) CreateCustomer(description string) (*stripe.Customer, error) {
-	params := &stripe.CustomerParams{Description: stripe.String(description)}
-	cus, err := customer.New(params)
+	cus, err := customer.New(&stripe.CustomerParams{Description: stripe.String(description)})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create customer: %v", err)
+		return nil, fmt.Errorf("failed to create customer: %w", err)
 	}
-	fmt.Printf("Created customer: %s\n", cus.ID) // Log the customer ID
+
+	pm, err := paymentmethod.New(&stripe.PaymentMethodParams{
+		Type: stripe.String("card"),
+		Card: &stripe.PaymentMethodCardParams{
+			Token: stripe.String("tok_visa"),
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create payment method: %w", err)
+	}
+
+	if _, err := paymentmethod.Attach(pm.ID, &stripe.PaymentMethodAttachParams{
+		Customer: stripe.String(cus.ID),
+	}); err != nil {
+		return nil, fmt.Errorf("failed to attach payment method to customer: %w", err)
+	}
+
+	fmt.Printf("Created customer: %s\n", cus.ID)
 	return cus, nil
 }

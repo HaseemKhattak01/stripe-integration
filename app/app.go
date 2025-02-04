@@ -1,34 +1,71 @@
 package app
 
 import (
+	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/HaseemKhattak01/stripe-integration/config"
-	"github.com/HaseemKhattak01/stripe-integration/handlers"
-	"github.com/HaseemKhattak01/stripe-integration/payment"
-	stripeclient "github.com/HaseemKhattak01/stripe-integration/stripe-client"
+	"github.com/HaseemKhattak01/stripe-integration/routes"
+	"github.com/HaseemKhattak01/stripe-integration/services"
+	"github.com/HaseemKhattak01/stripe-integration/validation"
+	"github.com/gin-gonic/gin"
 )
 
-func RunApp() {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+func StartServer(cfg *config.Config) {
+	// Initialize services
+	authService := services.NewStripeService(cfg.StripeKey)
+	validationService := validation.NewValidationService()
+
+	// Create router
+	router := setupRouter(*authService, *validationService)
+
+	// Start server
+	server := &http.Server{
+		Addr:    ":8080", // Default port set to 8080
+		Handler: router,
 	}
 
-	stripeclient.InitClient(cfg.StripeKey)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
 
-	stripeHandler := handlers.NewStripeHandler()
+	// Graceful shutdown
+	gracefulShutdown(server)
+}
 
-	cus, err := stripeHandler.CreateCustomer("Test Customer")
-	if err != nil {
-		log.Fatalf("Error in customer creation: %v", err)
+func setupRouter(authService services.StripeService, validationService validation.ValidationService) *gin.Engine {
+	r := routes.NewRouter(&authService, &validationService).Engine
+	r.Use(enableCors())
+	r.Static("/public", "./public")
+	return r
+}
+
+func enableCors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Next()
 	}
-	log.Printf("Created customer: %v", cus.ID)
+}
 
-	paymentService := payment.NewPaymentService()
-	paymentIntent, err := paymentService.CreatePaymentIntent(1000, "usd", cus.ID) // Example amount and currency
-	if err != nil {
-		log.Fatalf("Error creating payment intent: %v", err)
+func gracefulShutdown(server *http.Server) {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	<-stop
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server Shutdown Failed:%+v", err)
 	}
-	log.Printf("Created payment intent: %v", paymentIntent.ID)
+
+	log.Println("Server exited properly")
 }

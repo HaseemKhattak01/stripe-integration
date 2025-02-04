@@ -1,5 +1,21 @@
 package main
-import "github.com/HaseemKhattak01/stripe-integration/app"
+
+import (
+	"log"
+
+	"github.com/HaseemKhattak01/stripe-integration/app"
+	"github.com/HaseemKhattak01/stripe-integration/config"
+)
+
 func main() {
-	app.RunApp()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	if err = cfg.Validate(); err != nil {
+		log.Fatalf("Invalid configuration: %v", err)
+	}
+
+	app.StartServer(cfg)
 }

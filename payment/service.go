@@ -2,34 +2,39 @@ package payment
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/stripe/stripe-go/v76"
-	"github.com/stripe/stripe-go/v76/paymentintent"
+	"github.com/stripe/stripe-go/v76/webhook"
 )
 
-type PaymentService struct{}
+func HandleWebhook(w http.ResponseWriter, r *http.Request) {
+	const maxBodyBytes = 65536
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 
-func NewPaymentService() *PaymentService {
-	return &PaymentService{}
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusServiceUnavailable)
+		return
+	}
+
+	event, err := webhook.ConstructEvent(payload, r.Header.Get("Stripe-Signature"), "your-webhook-secret")
+	if err != nil {
+		http.Error(w, "Invalid webhook signature", http.StatusBadRequest)
+		return
+	}
+
+	handleEvent(event, w)
 }
 
-func (ps *PaymentService) CreatePaymentIntent(amount int64, currency, customerID string) (*stripe.PaymentIntent, error) {
-	params := &stripe.PaymentIntentParams{
-		Amount:   stripe.Int64(amount),
-		Currency: stripe.String(currency),
-		Customer: stripe.String(customerID),
+func handleEvent(event stripe.Event, w http.ResponseWriter) {
+	switch event.Type {
+	case "payment_intent.succeeded":
+		fmt.Println("PaymentIntent was successful!")
+	default:
+		fmt.Printf("Unhandled event type: %s\n", event.Type)
 	}
-	pi, err := paymentintent.New(params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create payment intent: %w", err)
-	}
-	return pi, nil
-}
 
-func (ps *PaymentService) ConfirmPaymentIntent(paymentIntentID string) (*stripe.PaymentIntent, error) {
-	pi, err := paymentintent.Confirm(paymentIntentID, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to confirm payment intent: %w", err)
-	}
-	return pi, nil
+	w.WriteHeader(http.StatusOK)
 }
