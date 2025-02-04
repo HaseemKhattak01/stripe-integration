@@ -1,4 +1,5 @@
 package models
+
 type Customer struct {
 	ID          string
 	Description string
