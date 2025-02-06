@@ -17,5 +17,5 @@ func main() {
 		log.Fatalf("Invalid configuration: %v", err)
 	}
 
-	app.StartServer(cfg)
+	app.StartServer(cfg) // Starting the server
 }

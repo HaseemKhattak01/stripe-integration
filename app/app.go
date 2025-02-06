@@ -22,11 +22,12 @@ func StartServer(cfg *config.Config) {
 	validationService := validation.NewValidationService()
 
 	// Create router
-	router := setupRouter(*authService, *validationService)
+	router := setupRouter(&authService, &validationService)
+
 
 	// Start server
 	server := &http.Server{
-		Addr:    ":8080", // Default port set to 8080
+		Addr:    ":8080", 
 		Handler: router,
 	}
 
@@ -40,10 +41,10 @@ func StartServer(cfg *config.Config) {
 	gracefulShutdown(server)
 }
 
-func setupRouter(authService services.StripeService, validationService validation.ValidationService) *gin.Engine {
-	r := routes.NewRouter(&authService, &validationService).Engine
+func setupRouter(authService *services.StripeService, validationService *validation.ValidationService) *gin.Engine {
+	r := routes.NewRouter(authService, validationService).Engine
 	r.Use(enableCors())
-	r.Static("/public", "./public")
+	// r.Static("/public", "./public")
 	return r
 }
 

@@ -15,6 +15,9 @@ var Client *StripeClient
 
 // InitClient initializes the Stripe client with the given API key.
 func InitClient(apiKey string) {
+	if apiKey == "" {
+		panic("STRIPE_API_KEY is not set")
+	}
 	stripe.Key = apiKey
 	api := &client.API{}
 	api.Init(apiKey, nil)
