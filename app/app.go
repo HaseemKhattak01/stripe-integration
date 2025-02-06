@@ -20,7 +20,7 @@ func StartServer(cfg *config.Config) {
 	authService := services.NewStripeService(cfg.StripeKey)
 	validationService := validation.NewValidationService()
 
-	router := setupRouter(authService, validationService)
+	router := setupRouter(authService, &validationService)
 
 	server := startServer(router)
 

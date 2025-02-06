@@ -12,8 +12,8 @@ type StripeService struct {
 	client *client.API
 }
 
-func NewStripeService(stripeKey string) StripeService {
-	return StripeService{client: client.New(stripeKey, nil)}
+func NewStripeService(stripeKey string) *StripeService {
+	return &StripeService{client: client.New(stripeKey, nil)}
 }
 
 func (ss *StripeService) CreateCustomer(description, email string) (*models.Customer, error) {

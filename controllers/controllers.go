@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -19,13 +20,13 @@ type ValidationService interface {
 func GenerateToken(c *gin.Context, authService AuthService, validationService ValidationService) {
 	var cardDetails models.CardDetails
 	if err := bindAndValidateCardDetails(c, &cardDetails, validationService); err != nil {
-		handleError(c, http.StatusBadRequest, err)
+		handleError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	token, err := authService.GenerateToken(cardDetails)
 	if err != nil {
-		handleError(c, http.StatusBadRequest, "Error generating token: "+err.Error())
+		handleError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -34,11 +35,11 @@ func GenerateToken(c *gin.Context, authService AuthService, validationService Va
 
 func bindAndValidateCardDetails(c *gin.Context, cardDetails *models.CardDetails, validationService ValidationService) error {
 	if err := c.ShouldBindJSON(cardDetails); err != nil {
-		return "Error binding JSON: " + err.Error()
+		return errors.New("Error binding JSON: " + err.Error())
 	}
 
 	if err := validationService.ValidateCardDetails(*cardDetails); err != nil {
-		return "Validation error: " + err.Error()
+		return errors.New("Validation error: " + err.Error())
 	}
 
 	return nil
