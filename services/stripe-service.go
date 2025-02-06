@@ -6,8 +6,6 @@ import (
 	"github.com/HaseemKhattak01/stripe-integration/models"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/client"
-	"github.com/stripe/stripe-go/paymentintent"
-	"github.com/stripe/stripe-go/token"
 )
 
 type StripeService struct {
@@ -15,17 +13,14 @@ type StripeService struct {
 }
 
 func NewStripeService(stripeKey string) StripeService {
-	stripeClient := &client.API{}
-	stripeClient.Init(stripeKey, nil)
-	return StripeService{client: stripeClient}
+	return StripeService{client: client.New(stripeKey, nil)}
 }
 
 func (ss *StripeService) CreateCustomer(description, email string) (*models.Customer, error) {
-	params := &stripe.CustomerParams{
+	cus, err := ss.client.Customers.New(&stripe.CustomerParams{
 		Description: stripe.String(description),
 		Email:       stripe.String(email),
-	}
-	cus, err := ss.client.Customers.New(params)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create customer: %w", err)
 	}
@@ -37,12 +32,11 @@ func (ss *StripeService) CreateCustomer(description, email string) (*models.Cust
 }
 
 func (ss *StripeService) CreatePaymentIntent(amount int64, currency, customerID string) (*stripe.PaymentIntent, error) {
-	params := &stripe.PaymentIntentParams{
+	pi, err := ss.client.PaymentIntents.New(&stripe.PaymentIntentParams{
 		Amount:   stripe.Int64(amount),
 		Currency: stripe.String(currency),
 		Customer: stripe.String(customerID),
-	}
-	pi, err := paymentintent.New(params)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create payment intent: %w", err)
 	}
@@ -50,15 +44,14 @@ func (ss *StripeService) CreatePaymentIntent(amount int64, currency, customerID 
 }
 
 func (ss *StripeService) GenerateToken(cardDetails models.CardDetails) (string, error) {
-	params := &stripe.TokenParams{
+	tok, err := ss.client.Tokens.New(&stripe.TokenParams{
 		Card: &stripe.CardParams{
 			Number:   stripe.String(cardDetails.CardNumber),
 			ExpMonth: stripe.String(cardDetails.ExpMonth),
 			ExpYear:  stripe.String(cardDetails.ExpYear),
 			CVC:      stripe.String(cardDetails.CVC),
 		},
-	}
-	tok, err := token.New(params)
+	})
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}

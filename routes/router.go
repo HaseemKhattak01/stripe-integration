@@ -10,11 +10,13 @@ type Router struct {
 }
 
 func NewRouter(authService controllers.AuthService, validationService controllers.ValidationService) *Router {
-	engine := gin.Default()
+	router := &Router{Engine: gin.Default()}
+	router.initializeRoutes(authService, validationService)
+	return router
+}
 
-	engine.POST("/generate-token", func(c *gin.Context) {
+func (router *Router) initializeRoutes(authService controllers.AuthService, validationService controllers.ValidationService) {
+	router.Engine.POST("/generate-token", func(c *gin.Context) {
 		controllers.GenerateToken(c, authService, validationService)
 	})
-
-	return &Router{Engine: engine}
 }

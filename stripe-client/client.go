@@ -1,25 +1,24 @@
 package stripeclient
 
 import (
+	"errors"
+
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/client"
 )
 
-// StripeClient is a type that wraps the Stripe API client.
 type StripeClient struct {
 	API *client.API
 }
 
-// Client is the global Stripe client instance.
 var Client *StripeClient
 
-// InitClient initializes the Stripe client with the given API key.
-func InitClient(apiKey string) {
+func InitClient(apiKey string) error {
 	if apiKey == "" {
-		panic("STRIPE_API_KEY is not set")
+		return errors.New("STRIPE_API_KEY is not set")
 	}
 	stripe.Key = apiKey
-	api := &client.API{}
-	api.Init(apiKey, nil)
+	api := client.New(apiKey, nil)
 	Client = &StripeClient{API: api}
+	return nil
 }

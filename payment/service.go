@@ -9,23 +9,22 @@ import (
 	"github.com/stripe/stripe-go/v76/webhook"
 )
 
+const maxBodyBytes = 65536
+
 func HandleWebhook(w http.ResponseWriter, r *http.Request) {
-	const maxBodyBytes = 65536
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 
-	payload, err := io.ReadAll(r.Body)
-	if err != nil {
+	if payload, err := io.ReadAll(r.Body); err != nil {
 		http.Error(w, "Failed to read request body", http.StatusServiceUnavailable)
-		return
-	}
-
-	event, err := webhook.ConstructEvent(payload, r.Header.Get("Stripe-Signature"), "your-webhook-secret")
-	if err != nil {
+	} else if event, err := constructStripeEvent(payload, r.Header.Get("Stripe-Signature")); err != nil {
 		http.Error(w, "Invalid webhook signature", http.StatusBadRequest)
-		return
+	} else {
+		handleEvent(event, w)
 	}
+}
 
-	handleEvent(event, w)
+func constructStripeEvent(payload []byte, signature string) (stripe.Event, error) {
+	return webhook.ConstructEvent(payload, signature, "your-webhook-secret")
 }
 
 func handleEvent(event stripe.Event, w http.ResponseWriter) {

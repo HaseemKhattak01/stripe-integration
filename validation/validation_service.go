@@ -21,8 +21,15 @@ func (vs *ValidationService) ValidateCardDetails(cardDetails models.CardDetails)
 		"CVC": vs.isValidCVC,
 	}
 
+	fieldValues := map[string]string{
+		"card number": cardDetails.CardNumber,
+		"expiry month": cardDetails.ExpMonth,
+		"expiry year": cardDetails.ExpYear,
+		"CVC": cardDetails.CVC,
+	}
+
 	for fieldName, validator := range fields {
-		if err := vs.validateField(cardDetails.GetField(fieldName), validator, fieldName); err != nil {
+		if err := vs.validateField(fieldValues[fieldName], validator, fieldName); err != nil {
 			return err
 		}
 	}

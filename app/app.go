@@ -17,15 +17,30 @@ import (
 )
 
 func StartServer(cfg *config.Config) {
-	// Initialize services
 	authService := services.NewStripeService(cfg.StripeKey)
 	validationService := validation.NewValidationService()
 
-	// Create router
-	router := setupRouter(&authService, &validationService)
+	router := setupRouter(authService, validationService)
 
+	server := startServer(router)
 
-	// Start server
+	gracefulShutdown(server)
+}
+
+func setupRouter(authService *services.StripeService, validationService *validation.ValidationService) *gin.Engine {
+	router := routes.NewRouter(authService, validationService).Engine
+	router.Use(enableCors())
+	return router
+}
+
+func enableCors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Next()
+	}
+}
+
+func startServer(router *gin.Engine) *http.Server {
 	server := &http.Server{
 		Addr:    ":8080", 
 		Handler: router,
@@ -37,22 +52,7 @@ func StartServer(cfg *config.Config) {
 		}
 	}()
 
-	// Graceful shutdown
-	gracefulShutdown(server)
-}
-
-func setupRouter(authService *services.StripeService, validationService *validation.ValidationService) *gin.Engine {
-	r := routes.NewRouter(authService, validationService).Engine
-	r.Use(enableCors())
-	// r.Static("/public", "./public")
-	return r
-}
-
-func enableCors() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Next()
-	}
+	return server
 }
 
 func gracefulShutdown(server *http.Server) {

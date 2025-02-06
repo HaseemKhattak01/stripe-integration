@@ -9,38 +9,42 @@ import (
 )
 
 type AuthService interface {
-	GenerateToken(cardDetails models.CardDetails) (string, error)
+	GenerateToken(models.CardDetails) (string, error)
 }
 
 type ValidationService interface {
-	ValidateCardDetails(cardDetails models.CardDetails) error
+	ValidateCardDetails(models.CardDetails) error
 }
 
 func GenerateToken(c *gin.Context, authService AuthService, validationService ValidationService) {
 	var cardDetails models.CardDetails
-	if err := c.ShouldBindJSON(&cardDetails); err != nil {
-		handleError(c, http.StatusBadRequest, "Error binding JSON", err)
-		log.Printf("Error binding JSON: %v", err)
-		return
-	}
-
-	if err := validationService.ValidateCardDetails(cardDetails); err != nil {
-		handleError(c, http.StatusBadRequest, "Validation error", err)
-		log.Printf("Validation error: %v", err)
+	if err := bindAndValidateCardDetails(c, &cardDetails, validationService); err != nil {
+		handleError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := authService.GenerateToken(cardDetails)
 	if err != nil {
-		handleError(c, http.StatusBadRequest, "Error generating token", err)
-		log.Printf("Error generating token: %v", err)
+		handleError(c, http.StatusBadRequest, "Error generating token: "+err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
-func handleError(c *gin.Context, statusCode int, logMessage string, err error) {
-	c.JSON(statusCode, gin.H{"error": err.Error()})
-	log.Printf("%s: %v", logMessage, err)
+func bindAndValidateCardDetails(c *gin.Context, cardDetails *models.CardDetails, validationService ValidationService) error {
+	if err := c.ShouldBindJSON(cardDetails); err != nil {
+		return "Error binding JSON: " + err.Error()
+	}
+
+	if err := validationService.ValidateCardDetails(*cardDetails); err != nil {
+		return "Validation error: " + err.Error()
+	}
+
+	return nil
+}
+
+func handleError(c *gin.Context, statusCode int, logMessage string) {
+	c.JSON(statusCode, gin.H{"error": logMessage})
+	log.Println(logMessage)
 }
